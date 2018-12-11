@@ -5,13 +5,12 @@ from operator import xor
 
 def cal_sigma(round_pix):
     sigma=0
-
     for i in range(7):
         diff=int(round_pix[i])-int(round_pix[i+1])
         diff_squar=diff**2
         sigma+=diff_squar
 
-    diff=round_pix[7]-round_pix[0]
+    diff=int(round_pix[7])-int(round_pix[0])
     diff_squar=diff**2
     sigma+=diff_squar
     if(sigma<8):
@@ -51,9 +50,9 @@ def cal_hidden_val(middle_pix_val,folded_feature,num_LSB):
         middle_pix_val=middle_pix_val & 248
     else:
         middle_pix_val=middle_pix_val & 240
-    print('$$$$')
-    print('folded_feature:',folded_feature)
-    print('$$$$')
+    # print('$$$$')
+    # print('folded_feature:',folded_feature)
+    # print('$$$$')
     middle_pix_val+=int(folded_feature,2)
     return middle_pix_val
 
@@ -114,19 +113,19 @@ def add_waterMarking(img_gray):
             
             num_LSB=cal_sigma(round_pix)
             hashed_feature=cal_hidden_hash(round_pix,block_index,ID_image,SK)
-            
+
             middle_pix_val=img_gray[h+1,w+1]
             folded_feature=folder_feature(hashed_feature,num_LSB)
             img_gray[h+1,w+1]=cal_hidden_val(middle_pix_val,folded_feature,num_LSB)
 
             block_index+=1
-    
     return img_gray
 
 
 ##目前只有實作灰階
 def validate_waterMarking(img_gray):
     
+    modified_box_index=[]
     img_shape=img_gray.shape
     #參數設定#
 
@@ -157,41 +156,70 @@ def validate_waterMarking(img_gray):
             middle_pix_val=img_gray[h+1,w+1]
 
             if(num_LSB==2):
-                LSB_feature=middle_pix_val & 3
+                hidden_LSB_feature=middle_pix_val & 3
             elif(num_LSB==3):
-                LSB_feature=middle_pix_val & 7
+                hidden_LSB_feature=middle_pix_val & 7
             else:
-                LSB_feature=middle_pix_val & 15
-            print(LSB_feature)
+                hidden_LSB_feature=middle_pix_val & 15
+        
+            hidden_LSB_feature=bin(hidden_LSB_feature)
+            hidden_LSB_feature=hidden_LSB_feature[2:]
+            hidden_LSB_feature=hidden_LSB_feature.rjust(num_LSB,'0')
             
             hashed_feature=cal_hidden_hash(round_pix,block_index,ID_image,SK)
-
-
+            # print('hashed_feature:',hashed_feature)
+            cal_folded_feature=folder_feature(hashed_feature,num_LSB)
+            # print('hidden_LSB_feature',hidden_LSB_feature)
+            # print('cal_folded_feature',cal_folded_feature)
+            # print('-------------------')
+            if(hidden_LSB_feature!=cal_folded_feature):
+                flag=False
+                modified_box_index.append(block_index)
             block_index+=1
-            
-            img_gray[h+1,w+1]=cal_hidden_val(middle_pix_val,hashed_feature,num_LSB)
-            break
-        break
-    return flag
+    return flag,modified_box_index
+
+def get_modified_block(modified_box_index,img_shape):
+
+    height=img_shape[0]
+    width=img_shape[1]
+    row_block_volumns=(width-1)//2
+    modified_box_index+=1
+    
+    x=(modified_box_index%row_block_volumns)*2
+    y=(modified_box_index//row_block_volumns)*2
+
+    return (y,x)
 
 
-# 輸入彩色圖片
-img_path='../data/lena.jpg'
+
 # 未認證的灰階圖片
-out_gray_path='../data/lena_gray.jpg'
+gray_path='../data/lena_gray.bmp'
 # 認證的灰階圖片
-out_encode_path='../data/lena_encode2.jpg'
+out_encode_path='../data/lena_encode.bmp'
+# 被修改過的已認證的灰階圖片
+test_path="../data/lena_encode_modified.bmp"
 
+# 讀取未認證的灰階圖片
+img_gray = cv2.imread(gray_path,cv2.IMREAD_GRAYSCALE)
 
-# 存檔未認證的灰階圖片
-img_gray = cv2.imread(img_path,cv2.IMREAD_GRAYSCALE)
-cv2.imwrite(out_gray_path, img_gray,[cv2.IMWRITE_JPEG_QUALITY, 100])
-
-
-#存檔認證過的灰階圖片
+# 認證
 img_encode=add_waterMarking(img_gray)
-cv2.imwrite(out_encode_path, img_encode,[cv2.IMWRITE_JPEG_QUALITY, 100])
 
-img_test = cv2.imread(out_encode_path,cv2.IMREAD_GRAYSCALE)
-validate_waterMarking(img_test)
+# 存檔認證過的灰階圖片
+cv2.imwrite(out_encode_path,img_encode)
+
+
+# 測試有沒有被修改過
+img_test = cv2.imread(test_path,cv2.IMREAD_GRAYSCALE)
+flag,modified_box_index=validate_waterMarking(img_test)
+if(flag==False):
+    print('此圖 已被修改')
+    print('被修改的位置大略為:')
+    print('(H ,W)')
+    for i in modified_box_index:
+        coor=get_modified_block(i,img_test.shape)
+        print(coor)
+else:
+    print('此圖 保持原樣')
+
 
