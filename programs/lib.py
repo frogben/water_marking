@@ -89,6 +89,7 @@ out_path
 def add_waterMarking(img_gray):
     
     img_shape=img_gray.shape
+    # img_shape=(512,512)
     #參數設定#
 
     #index of block
@@ -190,36 +191,5 @@ def get_modified_block(modified_box_index,img_shape):
 
     return (y,x)
 
-
-
-# 未認證的灰階圖片
-gray_path='../data/lena_gray.bmp'
-# 認證的灰階圖片
-out_encode_path='../data/lena_encode.bmp'
-# 被修改過的已認證的灰階圖片
-test_path="../data/lena_encode_modified.bmp"
-
-# 讀取未認證的灰階圖片
-img_gray = cv2.imread(gray_path,cv2.IMREAD_GRAYSCALE)
-
-# 認證
-img_encode=add_waterMarking(img_gray)
-
-# 存檔認證過的灰階圖片
-cv2.imwrite(out_encode_path,img_encode)
-
-
-# 測試有沒有被修改過
-img_test = cv2.imread(test_path,cv2.IMREAD_GRAYSCALE)
-flag,modified_box_index=validate_waterMarking(img_test)
-if(flag==False):
-    print('此圖 已被修改')
-    print('被修改的位置大略為:')
-    print('(H ,W)')
-    for i in modified_box_index:
-        coor=get_modified_block(i,img_test.shape)
-        print(coor)
-else:
-    print('此圖 保持原樣')
 
 
