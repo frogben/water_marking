@@ -1,3 +1,4 @@
+# coding: utf-8
 import lib
 import numpy as np
 import cv2
@@ -39,7 +40,7 @@ cv2.imwrite(encode_path,img_encode)
 
 """
 
-讀取未認證的灰階圖片
+# 讀取未認證的灰階圖片
 img_gray = cv2.imread(encode_path,cv2.IMREAD_GRAYSCALE)
 img_gray[50,30]=10
 cv2.imwrite(modified_path,img_gray)
@@ -55,10 +56,24 @@ cv2.imwrite(modified_path,img_gray)
 1)是否有被修改過
 2)被修改過的大概位置
 
-為了有對照組，使用lena_encode.bmp做比對
+為了有對照組，使用沒有被竄改過的lena_encode.bmp做比對
 
 
 """
+# 測試lena_encode.bmp有沒有被修改過
+img_test = cv2.imread(encode_path, cv2.IMREAD_GRAYSCALE)
+flag, modified_box_index = lib.validate_waterMarking(img_test)
+if(flag == False):
+    print(encode_path, '已被修改')
+    print('被修改的位置大略為:')
+    print('(   H ,   W )')
+    for i in modified_box_index:
+        coor = lib.get_modified_block(i, img_test.shape)
+        print("(", str(coor[0]).rjust(4, ' '),
+              ",", str(coor[1]).rjust(4, ' '), ")")
+else:
+    print(encode_path, '保持原樣')
+
 
 # 測試lena_encode_modified.bmp有沒有被修改過
 img_test = cv2.imread(modified_path,cv2.IMREAD_GRAYSCALE)
@@ -74,17 +89,6 @@ if(flag==False):
 else:
     print(modified_path,'保持原樣')
 
-# 測試lena_encode.bmp有沒有被修改過
-img_test = cv2.imread(encode_path,cv2.IMREAD_GRAYSCALE)
-flag,modified_box_index=lib.validate_waterMarking(img_test)
-if(flag==False):
-    print(modified_path,'已被修改')
-    print('被修改的位置大略為:')
-    print('(   H ,   W )')
-    for i in modified_box_index:
-        coor=lib.get_modified_block(i,img_test.shape)
-        print("(",str(coor[0]).rjust(4,' '),",",str(coor[1]).rjust(4,' '),")")
-else:
-    print(modified_path,'保持原樣')
+
 
 
