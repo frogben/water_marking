@@ -4,6 +4,10 @@ import cv2
 import hashlib
 from operator import xor
 
+'''
+傳入九宮格周圍八個像素
+算出九宮格內的sigma
+'''
 def cal_sigma(round_pix):
     sigma=0
     for i in range(7):
@@ -20,7 +24,13 @@ def cal_sigma(round_pix):
         return 3
     else:
         return 4
-
+'''
+利用md5將每個九宮格的ID(Index of this block )
+九宮格的特徵 (P1~P8) 
+影像ID(Identification of the image)
+加密者密碼(User’s secret key) 
+經過HASH（md5雜湊）成一個長度128 bits的特徵值
+'''
 def cal_hidden_hash(round_pix,block_index,ID_image,SK):
     all_str=""
     for i,v in enumerate(round_pix):
@@ -43,7 +53,9 @@ def cal_hidden_hash(round_pix,block_index,ID_image,SK):
     h = m.hexdigest()
     return h
 
-
+'''
+算上九宮格中間的像素加上壓縮後的hash值得像素值
+'''
 def cal_hidden_val(middle_pix_val,folded_feature,num_LSB):
     if(num_LSB==2):
         middle_pix_val=middle_pix_val & 252
@@ -57,7 +69,9 @@ def cal_hidden_val(middle_pix_val,folded_feature,num_LSB):
     middle_pix_val+=int(folded_feature,2)
     return middle_pix_val
 
-
+'''
+將128+4個bit hash值壓縮成指定的長度
+'''
 def folder_feature(hashed_feature,num_LSB):
     hashed_feature_bin=bin(int(hashed_feature,16))
     hashed_feature_bin=hashed_feature_bin[2:]
@@ -83,9 +97,8 @@ def folder_feature(hashed_feature,num_LSB):
 
 
 """
+加上浮水印
 目前只有實作灰階  
-out_path 
-
 """
 def add_waterMarking(img_gray):
     
@@ -123,8 +136,11 @@ def add_waterMarking(img_gray):
             block_index+=1
     return img_gray
 
-
-##目前只有實作灰階
+"""
+認證浮水印
+回傳有沒有被竄改(True or false)以及被修改像素所屬九宮格的位置
+目前只有實作灰階  
+"""
 def validate_waterMarking(img_gray):
     
     modified_box_index=[]
@@ -179,7 +195,9 @@ def validate_waterMarking(img_gray):
                 modified_box_index.append(block_index)
             block_index+=1
     return flag,modified_box_index
-
+"""
+計算出被修改大略位置 
+"""
 def get_modified_block(modified_box_index,img_shape):
 
     height=img_shape[0]
